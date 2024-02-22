@@ -3,16 +3,13 @@ import numpy as np
 import pandas as pd
 from scipy import constants
 
-from matplotlib.patches import Rectangle, Circle, Wedge, Arc
+from matplotlib.patches import Rectangle, Wedge
 from matplotlib.collections import PatchCollection
 
 '''
-first version
-probably need to rethink the class structure
 '''
 
-## distances in TDR in mm
-# to_cm, unit_label = 0.1, '[cm]'
+# convinience functions
 
 def to_deg(rad):
     return rad * 180/np.pi
@@ -40,15 +37,17 @@ def angle_0_to_2pi(angle):
             angle -= 2*np.pi 
     return angle
 
-############## CDC geometry
+# CDC geometry
 
 class CDC:
-    """simplified model of the CDC"""
+    """Simplified model of the CDC
+    
+    """
     
     def __init__(self, dictionary):
         
         self.unit = '[cm]'
-        # boundary points as defined in the TDR (C here corresponds to C2 in the figure)
+        # boundary points as defined in the TDR (C here corresponds to C2 in Fig. 6.2)
         self.A, self.B = None, None     
         self.C, self.D = None, None      
         self.E, self.F = None, None 
@@ -56,7 +55,7 @@ class CDC:
         # super-layers geomertry
         self.rho_min = None
         self.rho_max = None
-        self.nLayers = None # number of layers in a given SL
+        self.nLayers = None # number of layers in a given super-layer (SL)
         self.nCells  = None # number of cells in a given layer
 
         for attr in self.__dict__:
@@ -278,17 +277,11 @@ class CDC:
         ax.set_ylabel(f'y {self.unit}', fontsize=20)
         ax.set_aspect( 1 )
     
-############## track propagation
-
-# be careful: x, y, z variables
-#     x coordinate of vertex in case of composite particle, 
-#     or point of closest approach (POCA) in case of a track
-
-### convention (make sure it is applied)
-    # variables with 0 (x0, phi0) etc. correspond to POCA
-        # --> get rid of POCAx etc.
-
+# propagation of a charged particle in a magnetic field
 class Particle:
+    """TODO: write description
+    
+    """
     def __init__(self, dictionary):
         self.q = None # charge
         self.px, self.py, self.pz = None, None, None # 3-momentum
@@ -346,6 +339,9 @@ class Particle:
         return x0, y0, z0, d0, phi0, omega, tanLambda, s #dphi probably not needed
 
 class Point(Particle):
+    """TODO: write description
+    
+    """
     def __init__(self, dictionary, instanceCDC, u, step_in_phi=True):
         super().__init__(dictionary)
         self.instanceCDC = instanceCDC # get CDC model
@@ -357,7 +353,7 @@ class Point(Particle):
         self.layer_id = -1 # current layer (-1 means point not on a layer)
         self.cell_id = -1 # current cell ID in the layer
 
-        self.x, self.y, self.z, self.phi, self.s = self.get_particle_position(u, step_in_phi)
+        self.x, self.y, self.z, self.phi, self.s = self._get_particle_position(u, step_in_phi)
         self.inCDC = instanceCDC.insideCDC(self.x, self.y, self.z, verbose=False)
         self.rho =  np.sqrt(self.x**2 + self.y**2)
         
@@ -369,7 +365,7 @@ class Point(Particle):
             elif len(vals)>1:
                 sys.exit('More than one cdc layer correspond to that point. That should not happend. Aborting.')
 
-    def get_particle_position(self, u, step_in_phi):
+    def _get_particle_position(self, u, step_in_phi):
         # returns particle position at a given phi / arc length
         
         if step_in_phi:
@@ -396,6 +392,9 @@ class Point(Particle):
         return f"<Point at phi = {self.phi:.3f}>"
 
 class trajectory(Particle):
+    """TODO: write description
+    
+    """
     def __init__(self, dictionary, instanceCDC, step_size, step_in_phi=True):
         super().__init__(dictionary)
 
@@ -454,9 +453,9 @@ class trajectory(Particle):
         self.points['cumSum'] = self.points[["layer_id","cell_id"]].ne(self.points[["layer_id","cell_id"]].shift()).any(axis=1).cumsum() 
         self.points['nStepsIncell']=self.points.groupby('cumSum')['layer_id'].transform('count')
         
-        self.count_cdc_hits()
+        self._count_cdc_hits()
         
-    def count_cdc_hits(self):
+    def _count_cdc_hits(self):
         mask = (self.points.cell_id > -1)
         df_valid = self.points[mask]
         # as is drop_duplicates will also drop cells if the track 'came back to the same cell after a time'
