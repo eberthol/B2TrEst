@@ -1,10 +1,10 @@
 # B2TrEst
 
-description
+This package provides a way to estimate the number of hits deposited by a charged track passing through the Central Drift Chamber (CDC) of the Belle II detector.
 
-from inputs compute the trajectory of the charged particle
+From the 3-momenta, charged, and production vertex of a given track, the software computes the trajectory of the particle in the magnetic field of the detector. Then, using a simplified version of the CDC, it evaluates the number of CDC hits aossiciated to this track.
 
-assess the number of CDC hits
+It is possible to configure the CDC model. [IMPROVE]
 
 # Installation
 
@@ -17,11 +17,18 @@ If you want to use the script with rootfiles, you also need a way to read these 
 
 The file ``track_propagation_in_CDC.py`` contains all the classes and methods that are used to compute the trajectory of charged particles and the number of hits in the CDC.
 
-- expected format of input file
-- how to plot (more info in notebook)
+
+
+- expected format of input [dict.] + CDC model
+- outputs an obect -> can get NCDChits from there
+
+- can also plot some stuff
 
 # Quick start (notebook)
 
-# Recommendations
+```simple_example.ipynb```
+
+# Recommendations for running on a large number of tracks
 
 - can be slow -> better to run on small number of events at a time (a thousand entries)
+- [maybe provide some basic script]
