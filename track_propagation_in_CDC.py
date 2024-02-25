@@ -41,22 +41,27 @@ def angle_0_to_2pi(angle):
 
 class CDC:
     """Simplified model of the CDC
+      input: dictionary, 
+             if an empty dictionary is given, the values are taken from the TDR (Table 6.2 and Figure 6.2)
     
     """
     
     def __init__(self, dictionary):
         
         self.unit = '[cm]'
-        # boundary points as defined in the TDR (C here corresponds to C2 in Fig. 6.2)
-        self.A, self.B = None, None     
-        self.C, self.D = None, None      
-        self.E, self.F = None, None 
-        self.G, self.H = None, None 
-        # super-layers geomertry
-        self.rho_min = None
-        self.rho_max = None
-        self.nLayers = None # number of layers in a given super-layer (SL)
-        self.nCells  = None # number of cells in a given layer
+        # boundary points in the (z, y) plane as defined in the TDR (C here corresponds to C2 in Fig. 6.2)
+        # the z positions of G and H are computed byt the code
+        self.A, self.B = np.array([ -83.1,  108.2+15.0  ]),  np.array([  158.6,  108.2+15.0  ])     
+        self.C, self.D = np.array([ -68.2,   37.14 ]),       np.array([  144.9,   43.80 ])      
+        self.E, self.F = np.array([ -47.4,   24.95 ]),       np.array([   87.7,   24.95 ]) 
+        self.G, self.H = np.array([ -999,    16.0  ]),       np.array([   -999,   16.0  ]) 
+        # super-layers (SL) geomertry
+        self.rho_min = np.array([16.80, 25.70, 36.52, 47.69, 58.41, 69.53, 80.25,  91.37, 102.09])
+        self.rho_max = np.array([23.80, 34.80, 45.57, 56.69, 67.41, 78.53, 89.25, 100.37, 111.14])
+        # number of layers in a given super-layer 
+        self.nLayers = np.array([   8,    6,     6,     6,     6,     6,     6,      6,      6]) 
+        # number of cells in a given layer
+        self.nCells  = np.array([ 160,  160,   192,   224,   256,   288,   320,    352,    384]) 
 
         for attr in self.__dict__:
             if attr in dictionary.keys():
