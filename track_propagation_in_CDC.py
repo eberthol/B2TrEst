@@ -41,16 +41,51 @@ def angle_0_to_2pi(angle):
 
 class CDC:
     """Simplified model of the CDC
-      input: dictionary, 
-             if an empty dictionary is given, the values are taken from the TDR (Table 6.2 and Figure 6.2)
-    
+        all lengths are in cm
+
+    cellID: hoe is it done?
+    layer ids?
+
+
+    Attributes
+    ----------
+    A to H: numpy arrays
+        coordinates of the boundary points, in the (z,y) plane as defined in the TDR (C here corresponds to C2 in Fig. 6.2)
+        the z positions of G and H are computed by the framework
+    rho_min, rho_max: numpy arrays
+        min (max) distance of the superlayers (SL) from the point of origin in the (x-y) plane
+        rho_min (rho_max) correspdond to the begining (end) of a SL
+        Index 0 in the array corresponds to the SL that is the most inner one
+    nLayers: numpy arrays 
+        number of layers per SL
+    nCells: numpy arrays 
+        number of cells per layer, in the (x-y) plane
+        it is assumed that all layers in a given SL have the same number of cells
+
+    Public Methods
+    --------------
+    insideCDC(x, y, z, verbose=False)
+        bool
+        determines if a point with corrdinates (x, y, z) is witih the CDC volume
+    get_cellID(phi, cell_delta_phi)
+        int
+        returns the index of a given cell
+        input: phi position and cell size (in phi) of the given layer
+
+    zy_contour(fig, ax)
+        plot the CDC boundaries in the (z-y) plane
+    zy_layers(fig, ax)
+        plot the CDC layers in the (z-y) plane
+    xy_contour(fig, ax)
+        plot the CDC boundaries in the (x-y) plane
+    xy_cells(fig, ax)
+        plot the CDC cells in the (x-y) plane
+        REMARK: if there are a lot of cells this method will significanlty slow down the plotting function
     """
     
     def __init__(self, dictionary):
         
         self.unit = '[cm]'
-        # boundary points in the (z, y) plane as defined in the TDR (C here corresponds to C2 in Fig. 6.2)
-        # the z positions of G and H are computed byt the code
         self.A, self.B = np.array([ -83.1,  108.2+15.0  ]),  np.array([  158.6,  108.2+15.0  ])     
         self.C, self.D = np.array([ -68.2,   37.14 ]),       np.array([  144.9,   43.80 ])      
         self.E, self.F = np.array([ -47.4,   24.95 ]),       np.array([   87.7,   24.95 ]) 
