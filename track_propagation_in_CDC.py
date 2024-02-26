@@ -37,14 +37,16 @@ def angle_0_to_2pi(angle):
             angle -= 2*np.pi 
     return angle
 
-# CDC geometry
 
 class CDC:
     """Simplified model of the CDC
         all lengths are in cm
+        the 9 superlayers (SL) are labelled from 0 to 8, 0 being the innermost SL
+        the 56 layers are similarly labelled from 0 to 55
 
-    cellID: hoe is it done?
-    layer ids?
+    INPUT: dic
+        if an empty dictionary is given, then the model described in the TDR is used
+        the user can also specify their own CDC model by modifying the attibutes using a dictionary
 
 
     Attributes
@@ -61,6 +63,11 @@ class CDC:
     nCells: numpy arrays 
         number of cells per layer, in the (x-y) plane
         it is assumed that all layers in a given SL have the same number of cells
+    SL: pandas dataframe
+        dataframe containing information about each super layer: position, number of layers, etc.
+    layers: pandas dataframe
+        dataframe containing information about layers: ID, number of cells, size, size of a cell etc.
+
 
     Public Methods
     --------------
@@ -69,7 +76,7 @@ class CDC:
         determines if a point with corrdinates (x, y, z) is witih the CDC volume
     get_cellID(phi, cell_delta_phi)
         int
-        returns the index of a given cell
+        returns the index of a given cell (index 0 corresponds to the cell that has the samllest phi angle)
         input: phi position and cell size (in phi) of the given layer
 
     zy_contour(fig, ax)
@@ -105,8 +112,8 @@ class CDC:
         self.G = compute_point_on_line(P1=self.C,  P2=self.E, y=self.G[1])
         self.H = compute_point_on_line(P1=self.D,  P2=self.F, y=self.H[1])
         
-        self.SL = self._superLayers() # DataFrame containing information about super layers
-        self.layers = self._layer_organisation() # DataFrame containing information about layers
+        self.SL = self._superLayers() 
+        self.layers = self._layer_organisation() 
         
     def _layer_organisation(self):
         Ntot_layers = self.nLayers.sum()
@@ -154,7 +161,7 @@ class CDC:
         return cdc_SL
     
     def _add_zShape_info(self, df):
-        ## p1, p2 are the points defining the lines on the TDR (used to get z_bwd and z_fwd)
+        ## p1, p2 are the points defining the lines in the TDR (used to get z_bwd and z_fwd)
         # z_bwd(fwd) is the x position in the bwd(fwd) direction of the (super)Layer 
         df['p1_bwd'] = 0
         df['p1_bwd'] = np.where(df.rho_max.between(self.G[1], self.E[1]), df.apply(lambda r: self.E, axis=1),  df.p1_bwd)
@@ -193,14 +200,13 @@ class CDC:
         id_last_layer = self.layers.shape[0]-1
         zL, zR = 0, 0
         ## check in z
-        if abs(y)<=self.H[1] or abs(x)<=self.H[1]:  ## or abs(x)<=H[1]
-            # kind of dirty, here the particle is not in CDC but between the beam pipe and CDC...
+        if abs(y)<=self.H[1] or abs(x)<=self.H[1]: 
+            # actually, the particle is not in CDC but between the beam pipe and CDC... 
             pass
         else:
             # compute the limts in z at a given y
             zL = compute_point_on_line_signed(self.C, self.E, y)[0]  if abs(y)<=self.C[1] else compute_point_on_line_signed(self.A, self.C, y)[0]
             zR = compute_point_on_line_signed(self.F, self.D, y)[0]  if abs(y)<=self.D[1] else compute_point_on_line_signed(self.D, self.B, y)[0] 
-            # print(f'test particle is at (x,y,z) = ({x:.1f}, {y:.1f}, {z:.1f}), zL = {zL:.1f}, zR = {zR:.1f}, rho = {rho:.1f}' )
             if z<zL or z>zR:
                 inCDC=False
                 if verbose: print(f'particle is at (x,y,z) = ({x:.1f}, {y:.1f}, {z:.1f}), zL = {zL:.1f}, zR = {zR:.1f}, rho = {rho:.1f}, rhoM = {self.layers[self.layers.layer_id==id_last_layer].rho_max.values[0]:.1f}' )
@@ -260,7 +266,6 @@ class CDC:
         p = PatchCollection(patches, alpha=0.4)
         ax.add_collection(p)
         
-        # if showLayers:
         patches  = [ Rectangle((self.layers.loc[lay].z_bwd,  self.layers.loc[lay].rho_min), 
                         width=self.layers.loc[lay].z_fwd - self.layers.loc[lay].z_bwd, 
                         height=(self.layers.loc[lay].rho_max - self.layers.loc[lay].rho_min) ) for lay in [f'lay{i}' for i in range(0, self.layers.shape[0])]]
@@ -278,8 +283,8 @@ class CDC:
         ax.set_ylim(-self.A[1], self.A[1])
 
     def xy_contour(self, fig, ax):
-        # A wedge centered at x, y center with radius r that sweeps theta1 to theta2 (in degrees).
-        # If width is given, then a partial wedge is drawn from inner radius r - width to outer radius r.
+        # a wedge centered at x, y center with radius r that sweeps theta1 to theta2 (in degrees)
+        # if width is given, then a partial wedge is drawn from inner radius r - width to outer radius r
         patches = [ Wedge((0, 0), 
                       self.SL.loc[sl].rho_max, 
                       0, 360, 
@@ -300,8 +305,6 @@ class CDC:
         ax.set_aspect( 1 )
 
     def xy_cells(self, fig, ax):
-        # A wedge centered at x, y center with radius r that sweeps theta1 to theta2 (in degrees).
-        # If width is given, then a partial wedge is drawn from inner radius r - width to outer radius r.
         patches = []
         for l in range(0, self.layers.shape[0]):
             lay = f'lay{l}'
@@ -310,35 +313,48 @@ class CDC:
                             i*to_deg(self.layers.loc[lay].cell_delta_phi), i*to_deg(self.layers.loc[lay].cell_delta_phi)+to_deg(self.layers.loc[lay].cell_delta_phi), 
                             width=( self.layers.loc[lay].rho_max-self.layers.loc[lay].rho_min  )) for i in range(0, self.layers.loc[lay].nCells) ]
         
-        ax.add_collection( PatchCollection(patches, linewidth=2, edgecolor='b', ls=':') ) # facecolor=None, doesn't work...
+        ax.add_collection( PatchCollection(patches, linewidth=2, edgecolor='b', ls=':') )
         ax.set_xlim(-self.A[1], self.A[1])
         ax.set_ylim(-self.A[1], self.A[1])
         ax.set_xlabel(f'x {self.unit}', fontsize=20)
         ax.set_ylabel(f'y {self.unit}', fontsize=20)
         ax.set_aspect( 1 )
     
-# propagation of a charged particle in a magnetic field
 class Particle:
-    """TODO: write description
-    
+    """
+    Given the charge, 3-momentum and production vertex of the particle, this class
+    compute the information related to the point of closest approach (POCA)
+
+    Attributes
+    ----------
+    q: int
+        charge
+    px, py, pz: float
+        3-momentum of the particle
+    prodVtxX, prodVtxY, prodVtxZ: float
+        coordinates of the production vertex of the particle
+
+    x0, y0, z0: float
+        coordinates of the POCA 
+    d0, phi0, omega, tanLambda: float
+        helix parametrs
+    s0: float
+        arclength in the (x-y) plan at the POCA
+        
     """
     def __init__(self, dictionary):
-        self.q = None # charge
-        self.px, self.py, self.pz = None, None, None # 3-momentum
-        self.POCAx, self.POCAy, self.POCAz = None, None, None # coordinates of POCA 
-        self.prodVtxX, self.prodVtxY, self.prodVtxZ =  None, None, None # coordinates of the production vertex of the particle
+        self.q = None 
+        self.px, self.py, self.pz = None, None, None 
+        self.prodVtxX, self.prodVtxY, self.prodVtxZ =  None, None, None 
         
-        self.x0, self.y0, self.z0 = None, None, None # coordinates of POCA 
+        self.x0, self.y0, self.z0 = None, None, None 
         self.d0, self.phi0, self.omega, self.tanLambda, self.s0 = None, None, None, None, None
 
         for attr in self.__dict__:
             if attr in dictionary.keys():
                 self.__setattr__(attr, dictionary[attr])
-        
-        self.x0 = self.POCAx
-        self.y0 = self.POCAy
 
-        if self.POCAx is None:
+        if self.x0 is None:
             self.x0, self.y0, self.z0, self.d0, self.phi0, self.omega, self.tanLambda, self.s0 = self._get_helix_paramters_at_POCA()
                 
     def _get_helix_paramters_at_POCA(self):
@@ -354,7 +370,6 @@ class Particle:
         a = Bz/(constants.c*1e-6) # constants.c is in m.s-1
         omega     = a * self.q / pt   # [cm-1]   constants.c*1e-9 = 0.3 (which corresponds to cyclotron radius in m, we want cm)  
         tanLambda = self.pz/pt 
-        # theta0 = np.arctan2(1, tanLambda) # for completeness
 
         Dpar  = -self.prodVtxX * np.cos(phi) - self.prodVtxY * np.sin(phi)
         Dperp = -self.prodVtxY * np.cos(phi) + self.prodVtxX * np.sin(phi)
@@ -379,19 +394,32 @@ class Particle:
         return x0, y0, z0, d0, phi0, omega, tanLambda, s #dphi probably not needed
 
 class Point(Particle):
-    """TODO: write description
+    """
+    Get any point on the trajectory of a given particle and also computes its position in the CDC
+
+
+    Attributes
+    ----------
+    instanceCDC: CDC
+        CDC model
+    inCDC: bool
+        is the point in the CDC?
+    layer_id: int
+        CDC layer corresponding to the point
+        the special value -1 means that no layer is associated to this point
+    cell_id: int
+        cell corresponding to the point
+        the special value -1 means that no cell is associated to this point
+    
+    x, y, z, rho, phi, s: float
+        coordinate, rho (vector from the origin the x-y plane), phi angle and arc-lenght corresponding to the point        
     
     """
     def __init__(self, dictionary, instanceCDC, u, step_in_phi=True):
         super().__init__(dictionary)
-        self.instanceCDC = instanceCDC # get CDC model
-        self.phi, self.s = None, None
-        self.x, self.y, self.z = None, None, None # coordinates of point (at a given phi)
-        
-        # position in CDC --> not sure it should be implemented here...
-        self.inCDC = None # is point inside CDC?
-        self.layer_id = -1 # current layer (-1 means point not on a layer)
-        self.cell_id = -1 # current cell ID in the layer
+        self.instanceCDC = instanceCDC 
+        self.layer_id = -1 
+        self.cell_id = -1 
 
         self.x, self.y, self.z, self.phi, self.s = self._get_particle_position(u, step_in_phi)
         self.inCDC = instanceCDC.insideCDC(self.x, self.y, self.z, verbose=False)
@@ -432,34 +460,87 @@ class Point(Particle):
         return f"<Point at phi = {self.phi:.3f}>"
 
 class trajectory(Particle):
-    """TODO: write description
-    
     """
-    def __init__(self, dictionary, instanceCDC, step_size, step_in_phi=True):
+        collection of points representing the trajectory of the particle
+        computes the number of hits in the CDC
+        the distance between the points (steps) can be given as a function of the arc length (s) or the angle phi (phi)
+
+        
+        TODO:
+        explain steps in s and phi (or REMOVE steps in phi)
+
+    Attributes
+    ----------
+        signed_step: float
+            for steps in arc length, this is equal to step_size
+            for steps in phi, we add to know the sign (i.e. in which direction is the track going)
+        steps: numpy array
+            array containing the steps
+        points: pandas dataframe
+            dataframe containing all the points TODO: give more information about the structure
+        CDChits: int
+            number of CDC hits 
+        meanStepsPerCell_all, stdStepsPerCell_all, minStepsPerCell_all, maxStepsPerCell_all: float
+            mean, standard deviation, min and max number on steps per cell
+            can be used to tune the cut on the number of steps
+        meanStepsPerCell_SL0, stdStepsPerCell_SL0, minStepsPerCell_SL0, maxStepsPerCell_SL0: float
+            mean, standard deviation, min and max number on steps per cell for the dense superlayer (SL0)
+            can be used to tune the cut on the number of steps
+        meanStepsPerCell_SL1_SL8, stdStepsPerCell_SL1_SL8, minStepsPerCell_SL1_SL8, maxStepsPerCell_SL1_SL8: float
+            mean, standard deviation, min and max number on steps per cell for the outer superlayer (SL1 to SL8)
+            can be used to tune the cut on the number of steps
+        min_setps_in_SL0_cell: int 
+            minimum number of steps in a SL0 cell to be counted as a hit
+            default value is 2
+        min_setps_in_outer_cell: int
+            minimum number of steps in a SL1-8 cell to be counted as a hit
+            efault value is 8
+        list_of_points: list
+            list of Point() objects forming the trajectory
+        points: pandas dataframe
+            for each point, provide the coordinates, the angle phi, the arc lenght s and the corresponding CDC layer and cell
+        
+    Public Methods
+    --------------
+        xy_trajectory(self, ax, label='', color='b')
+            plot the trajectory in the (x-y) plane
+        zy_trajectory(self, ax, label='', color='b')
+            plot the trajectory in the (z-y) plane
+        xy_vertex(self, ax, label='', color='b')
+            plot the vertex position in the (x-y) plane
+        zy_vertex(self, ax, label='', color='b')
+            plot the vertex position in the (z-y) plane
+        xy_poca(self, ax, label='', color='b')
+            plot the POCA position in the (x-y) plane
+        zy_poca(self, ax, label='', color='b')
+            plot the POCA position in the (x-y) plane
+            
+    """
+    def __init__(self, dictionary, instanceCDC, step_size, step_in_phi=True, min_setps_in_SL0_cell=2, min_setps_in_outer_cell=8):
         super().__init__(dictionary)
 
-        self.signed_step = None # only relevant for steps in phi
-        self.sign = None # only relevant for steps in phi
+        self.signed_step = None 
         self.steps = None
 
         if step_in_phi:
             self.signed_step = -step_size*self.omega/abs(self.omega) 
-            self.sign = -1 if self.signed_step <0 else 1        
-            self.steps = np.arange(self.phi0, self.phi0+self.sign*2*np.pi, self.signed_step)  ## maybe we should go further than 2pi!
+            sign = -1 if self.signed_step <0 else 1        
+            self.steps = np.arange(self.phi0, self.phi0+sign*2*np.pi, self.signed_step)  ## maybe we should go further than 2pi!
         else:
             self.signed_step = step_size
-            self.steps = np.arange(self.s0, self.s0+1000, self.signed_step) # 1000 is a dummy
+            self.steps = np.arange(self.s0, self.s0+1000, self.signed_step) # 1000 is a dummy value
 
-        self.points = None # dataframe containing all the points
-        self.CDChits = None # number of CDC hits 
-        self.CDChits_clean28, self.CDChits_clean77 = None, None
+        self.points = None 
+        self.CDChits = None 
+
+        self.min_setps_in_SL0_cell   = min_setps_in_SL0_cell 
+        self.min_setps_in_outer_cell = min_setps_in_outer_cell 
         
-        # info about the number of steps per cell
         self.meanStepsPerCell_all, self.stdStepsPerCell_all, self.minStepsPerCell_all, self.maxStepsPerCell_all = None, None, None, None
         self.meanStepsPerCell_SL0, self.stdStepsPerCell_SL0, self.minStepsPerCell_SL0, self.maxStepsPerCell_SL0 = None, None, None, None
         self.meanStepsPerCell_SL1_SL8, self.stdStepsPerCell_SL1_SL8, self.minStepsPerCell_SL1_SL8, self.maxStepsPerCell_SL1_SL8 = None, None, None, None
         
-        self.list_of_points = [] # list of Point objects 
+        self.list_of_points = [] 
         rho_Vtx = np.sqrt( self.prodVtxX**2 +  self.prodVtxY**2 )
         for step in self.steps:
             p = Point(dictionary, instanceCDC, step, step_in_phi)
@@ -475,7 +556,6 @@ class trajectory(Particle):
                         if self.pz<0 and p.z<=self.prodVtxZ:
                             self.list_of_points.append(p)
             else:
-                # print('')
                 break
     
         dct = {'phi': [], 's': [], 'x':[], 'y':[], 'z': [], 'layer_id': [], 'cell_id':[]}
@@ -498,12 +578,10 @@ class trajectory(Particle):
     def _count_cdc_hits(self):
         mask = (self.points.cell_id > -1)
         df_valid = self.points[mask]
-        # as is drop_duplicates will also drop cells if the track 'came back to the same cell after a time'
+        # as is, drop_duplicates will also drop cells if the track 'came back to the same cell after a time'
         # could use nStepsIncell to help with that or write something that drops only consecutive duplicates
         cells = df_valid.drop_duplicates(['layer_id', 'cell_id'], keep='first')
-        self.CDChits = cells.shape[0]
-        self.CDChits_clean28 = cells.loc[( ((cells.layer_id<8)&(cells.nStepsIncell>2)) | ((cells.layer_id>7)&(cells.nStepsIncell>8)) ) ].shape[0]
-        self.CDChits_clean77 = cells.loc[( ((cells.layer_id<8)&(cells.nStepsIncell>7)) | ((cells.layer_id>7)&(cells.nStepsIncell>7)) ) ].shape[0]
+        self.CDChits = cells.loc[( ((cells.layer_id<8)&(cells.nStepsIncell>self.min_setps_in_SL0_cell)) | ((cells.layer_id>7)&(cells.nStepsIncell>self.min_setps_in_outer_cell)) ) ].shape[0]
     
         self.meanStepsPerCell = df_valid['nStepsIncell'].mean()
         self.stdStepsPerCell  = df_valid['nStepsIncell'].std()
@@ -534,8 +612,8 @@ class trajectory(Particle):
         ax.plot( [self.prodVtxZ ], [self.prodVtxY], marker="*", markersize=15, color=color, label=label)
         
     def xy_poca(self, ax, label='', color='b'):
-        ax.plot( [self.POCAx ], [self.POCAy], marker="x", markersize=15, color=color, label=label)
+        ax.plot( [self.x0 ], [self.y0], marker="x", markersize=15, color=color, label=label)
         
     def zy_poca(self, ax, label='', color='b'):
-        ax.plot( [self.POCAz ], [self.POCAy], marker="x", markersize=15, color=color, label=label)
+        ax.plot( [self.z0 ], [self.y0], marker="x", markersize=15, color=color, label=label)
         
