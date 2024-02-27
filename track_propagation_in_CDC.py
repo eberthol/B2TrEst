@@ -438,7 +438,7 @@ class Point(Particle):
         
         if step_in_phi:
             phi = u
-        ### make sure phi is in the right quadrant (phi is in [0, pi] and [0, -pi] )
+        # make sure phi is in the right quadrant (phi is in [0, pi] and [0, -pi] )
             if phi>np.pi:
                 phi = np.pi - phi
             if phi<=-np.pi:
@@ -456,7 +456,6 @@ class Point(Particle):
         return x_prime, y_prime, z_prime, phi, s
     
     def __repr__(self):
-        # what is displayed when writing the name of the cass in the command line
         return f"<Point at phi = {self.phi:.3f}>"
 
 class trajectory(Particle):
@@ -464,10 +463,7 @@ class trajectory(Particle):
         collection of points representing the trajectory of the particle
         computes the number of hits in the CDC
         the distance between the points (steps) can be given as a function of the arc length (s) or the angle phi (phi)
-
-        
-        TODO:
-        explain steps in s and phi (or REMOVE steps in phi)
+        the steps are in arc-length by default
 
     Attributes
     ----------
@@ -476,8 +472,6 @@ class trajectory(Particle):
             for steps in phi, we add to know the sign (i.e. in which direction is the track going)
         steps: numpy array
             array containing the steps
-        points: pandas dataframe
-            dataframe containing all the points TODO: give more information about the structure
         CDChits: int
             number of CDC hits 
         meanStepsPerCell_all, stdStepsPerCell_all, minStepsPerCell_all, maxStepsPerCell_all: float
@@ -498,7 +492,7 @@ class trajectory(Particle):
         list_of_points: list
             list of Point() objects forming the trajectory
         points: pandas dataframe
-            for each point, provide the coordinates, the angle phi, the arc lenght s and the corresponding CDC layer and cell
+            for each point, provide the coordinates, the angle phi, the arc length s and the corresponding CDC layer and cell
         
     Public Methods
     --------------
@@ -516,7 +510,7 @@ class trajectory(Particle):
             plot the POCA position in the (x-y) plane
             
     """
-    def __init__(self, dictionary, instanceCDC, step_size, step_in_phi=True, min_setps_in_SL0_cell=2, min_setps_in_outer_cell=8):
+    def __init__(self, dictionary, instanceCDC, step_size, step_in_phi=False, min_setps_in_SL0_cell=2, min_setps_in_outer_cell=8):
         super().__init__(dictionary)
 
         self.signed_step = None 
@@ -525,7 +519,7 @@ class trajectory(Particle):
         if step_in_phi:
             self.signed_step = -step_size*self.omega/abs(self.omega) 
             sign = -1 if self.signed_step <0 else 1        
-            self.steps = np.arange(self.phi0, self.phi0+sign*2*np.pi, self.signed_step)  ## maybe we should go further than 2pi!
+            self.steps = np.arange(self.phi0, self.phi0+sign*2*np.pi, self.signed_step)  # maybe we should go further than 2pi?
         else:
             self.signed_step = step_size
             self.steps = np.arange(self.s0, self.s0+1000, self.signed_step) # 1000 is a dummy value
