@@ -458,7 +458,7 @@ class Point(Particle):
     def __repr__(self):
         return f"<Point at phi = {self.phi:.3f}>"
 
-class trajectory(Particle):
+class Trajectory(Particle):
     """
         collection of points representing the trajectory of the particle
         computes the number of hits in the CDC
