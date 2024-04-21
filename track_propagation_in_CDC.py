@@ -199,12 +199,11 @@ class CDC:
         rho = np.sqrt(x**2 + y**2)
         id_last_layer = self.layers.shape[0]-1
         zL, zR = 0, 0
-        ## check in z
-        if abs(y)<=self.H[1] or abs(x)<=self.H[1]: 
+        if rho<=self.rho_min[0]: 
             # actually, the particle is not in CDC but between the beam pipe and CDC... 
             pass
         else:
-            # compute the limts in z at a given y
+            # compute the limits in z at a given y
             zL = compute_point_on_line_signed(self.C, self.E, y)[0]  if abs(y)<=self.C[1] else compute_point_on_line_signed(self.A, self.C, y)[0]
             zR = compute_point_on_line_signed(self.F, self.D, y)[0]  if abs(y)<=self.D[1] else compute_point_on_line_signed(self.D, self.B, y)[0] 
             if z<zL or z>zR:
@@ -359,9 +358,6 @@ class Particle:
                 
     def _get_helix_paramters_at_POCA(self):
 
-        ## CAUTION: there seems too be a sign problem with x0, y0 
-        # (which are supposed to be the same as POCAx, POCAy)
-        # maybe signs are wrong everywhere we use x0/POCAx...
         phi = np.arctan2(self.py, self.px)
         pt = np.sqrt(self.px**2 + self.py**2)
         
@@ -380,18 +376,13 @@ class Particle:
         s = dphi/omega 
 
         d0 = A / ( 1 + U )
-        phi0 = phi - dphi # np.arctan2(py, px) - np.arctan2( omega * Dpar, 1 + omega * Dperp )
-        z0 = self.prodVtxZ + s * tanLambda ## FROM SACHA's PRENSENTATION: z0 = z_rec - tanLmanbda*s_rec
-
-        ## from ref.
-        # sign problem??
-        # x0 = -d0 * np.sin(phi0) 
-        # y0 =  d0 * np.cos(phi0) 
+        phi0 = phi - dphi 
+        z0 = self.prodVtxZ + s * tanLambda 
 
         x0 = d0 * np.sin(phi0) 
         y0 = -d0 * np.cos(phi0) 
 
-        return x0, y0, z0, d0, phi0, omega, tanLambda, s #dphi probably not needed
+        return x0, y0, z0, d0, phi0, omega, tanLambda, s 
 
 class Point(Particle):
     """
@@ -422,7 +413,7 @@ class Point(Particle):
         self.cell_id = -1 
 
         self.x, self.y, self.z, self.phi, self.s = self._get_particle_position(u, step_in_phi)
-        self.inCDC = instanceCDC.insideCDC(self.x, self.y, self.z, verbose=False)
+        self.inCDC = instanceCDC.insideCDC(self.x, self.y, self.z, verbose=False) 
         self.rho =  np.sqrt(self.x**2 + self.y**2)
         
         if self.inCDC:
@@ -519,7 +510,7 @@ class Trajectory(Particle):
         if step_in_phi:
             self.signed_step = -step_size*self.omega/abs(self.omega) 
             sign = -1 if self.signed_step <0 else 1        
-            self.steps = np.arange(self.phi0, self.phi0+sign*2*np.pi, self.signed_step)  # maybe we should go further than 2pi?
+            self.steps = np.arange(self.phi0, self.phi0+sign*2*np.pi, self.signed_step) 
         else:
             self.signed_step = step_size
             self.steps = np.arange(self.s0, self.s0+1000, self.signed_step) # 1000 is a dummy value
