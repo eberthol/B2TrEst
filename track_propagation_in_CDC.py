@@ -199,22 +199,25 @@ class CDC:
         rho = np.sqrt(x**2 + y**2)
         id_last_layer = self.layers.shape[0]-1
         zL, zR = 0, 0
+        ## check in z
         if rho<=self.rho_min[0]: 
-            # actually, the particle is not in CDC but between the beam pipe and CDC... 
+            # actually, the particle is not in CDC but between the beam pipe and CDC... å
             pass
         else:
             # compute the limits in z at a given y
-            zL = compute_point_on_line_signed(self.C, self.E, y)[0]  if abs(y)<=self.C[1] else compute_point_on_line_signed(self.A, self.C, y)[0]
-            zR = compute_point_on_line_signed(self.F, self.D, y)[0]  if abs(y)<=self.D[1] else compute_point_on_line_signed(self.D, self.B, y)[0] 
+            zL = compute_point_on_line_signed(self.C, self.E, rho)[0]  if abs(rho)<=self.C[1] else compute_point_on_line_signed(self.A, self.C, rho)[0]
+            zR = compute_point_on_line_signed(self.F, self.D, rho)[0]  if abs(rho)<=self.D[1] else compute_point_on_line_signed(self.D, self.B, rho)[0] 
             if z<zL or z>zR:
                 inCDC=False
                 if verbose: print(f'particle is at (x,y,z) = ({x:.1f}, {y:.1f}, {z:.1f}), zL = {zL:.1f}, zR = {zR:.1f}, rho = {rho:.1f}, rhoM = {self.layers[self.layers.layer_id==id_last_layer].rho_max.values[0]:.1f}' )
                 if verbose: print(f'  ==> particle exited in the z direction' )
+
         ## check in rho direction
         if  rho>self.layers[self.layers.layer_id==id_last_layer].rho_max.values[0]: 
             inCDC=False
             if verbose: print(f'particle is at (x,y,z) = ({x:.1f}, {y:.1f}, {z:.1f}), zL = {zL:.1f}, zR = {zR:.1f}, rho = {rho:.1f}, rhoM = {self.layers[self.layers.layer_id==id_last_layer].rho_max.values[0]:.1f}' )
             if verbose: print(f' ==> particle exited in the  rho direction')
+
         return inCDC
 
     def get_cellID(self, phi, cell_delta_phi):
