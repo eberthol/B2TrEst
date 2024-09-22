@@ -16,9 +16,14 @@ def to_deg(rad):
 
 def compute_point_on_line(P1, P2, y):
     ## y = az + b
-    a = ( P1[1] - P2[1] )/( P1[0] - P2[0])
-    b =  P1[1] - a * P1[0]
-    z = (y - b)/a
+    if P1[0]==P2[0]:
+        z = P1[0]
+    else:
+        a = ( P1[1] - P2[1] )/( P1[0] - P2[0])
+        if a==0:
+            print(f'a = 0: P1 = {P1}     P2 = {P2}, y = {y}')
+        b =  P1[1] - a * P1[0]
+        z = (y - b)/a
     return np.array([z, y])
 
 def compute_point_on_line_signed(P1, P2, y):
@@ -375,11 +380,11 @@ class Particle:
         A = 2 * Dperp + omega * ( Dperp**2 + Dpar**2 )
         U = np.sqrt( 1 + omega * A )
 
-        dphi = np.arctan2( omega * Dpar, 1 + omega * Dperp ) # l in the paper 
+        dphi = np.arctan2( omega * Dpar, 1 + omega * Dperp ) 
         s = dphi/omega 
 
         d0 = A / ( 1 + U )
-        phi0 = phi - dphi 
+        phi0 = phi - dphi # np.arctan2(py, px) - np.arctan2( omega * Dpar, 1 + omega * Dperp )
         z0 = self.prodVtxZ + s * tanLambda 
 
         x0 = d0 * np.sin(phi0) 
@@ -406,47 +411,41 @@ class Point(Particle):
         the special value -1 means that no cell is associated to this point
     
     x, y, z, rho, phi, s: float
-        coordinate, rho (vector from the origin the x-y plane), phi angle and arc-lenght corresponding to the point        
+        coordinate, rho (vector from the origin the x-y plane), phi angle and arc-length corresponding to the point        
     
     """
-    def __init__(self, dictionary, instanceCDC, u, step_in_phi=True):
+    def __init__(self, dictionary, instanceCDC, s):
         super().__init__(dictionary)
         self.instanceCDC = instanceCDC 
         self.layer_id = -1 
         self.cell_id = -1 
 
-        self.x, self.y, self.z, self.phi, self.s = self._get_particle_position(u, step_in_phi)
+        self.x, self.y, self.z, self.phi, self.s = self._get_particle_position(s)
         self.inCDC = instanceCDC.insideCDC(self.x, self.y, self.z, verbose=False) 
         self.rho =  np.sqrt(self.x**2 + self.y**2)
+
+        self.azimutal_angle = np.arctan2(self.y, self.x)
         
         if self.inCDC:
             vals = instanceCDC.layers.loc[(instanceCDC.layers['rho_min'] <= self.rho) & (instanceCDC.layers['rho_max'] > self.rho)].layer_id.values
             if len(vals)==1:
                 self.layer_id = instanceCDC.layers.loc[(instanceCDC.layers['rho_min'] <= self.rho) & (instanceCDC.layers['rho_max'] > self.rho)].layer_id.values[0]
-                self.cell_id = instanceCDC.get_cellID(self.phi, instanceCDC.layers.loc[f'lay{self.layer_id}'].cell_delta_phi)
+                self.cell_id = instanceCDC.get_cellID(self.azimutal_angle, instanceCDC.layers.loc[f'lay{self.layer_id}'].cell_delta_phi)
             elif len(vals)>1:
-                sys.exit('More than one cdc layer correspond to that point. That should not happend. Aborting.')
+                sys.exit('More than one CDC layer correspond to that point. That should not happend. Aborting.')
 
-    def _get_particle_position(self, u, step_in_phi):
-        # returns particle position at a given phi / arc length
-        
-        if step_in_phi:
-            phi = u
-        # make sure phi is in the right quadrant (phi is in [0, pi] and [0, -pi] )
-            if phi>np.pi:
-                phi = np.pi - phi
-            if phi<=-np.pi:
-                phi = 2*np.pi + phi
-            s = (self.phi0-phi)/self.omega
-        else:
-            s = u
-            phi = self.phi0 - s*self.omega
+    def _get_particle_position(self, s):
+        # returns particle position at a given arc length
 
-        A = (phi-self.phi0) * 0.5
-        B = (phi+self.phi0) * 0.5
+        phi = self.phi0 - s*self.omega # not used in the computation
+
+
         z_prime = self.z0 + s * self.tanLambda
-        x_prime = self.x0 + s * np.sin(A)/A * np.cos(B) if A!=0 else self.x0
-        y_prime = self.y0 + s * np.sin(A)/A * np.sin(B) if A!=0 else self.x0
+
+        Cs = self.omega * s
+        x_prime = self.x0 + s * np.sin( 0.5 * Cs )/(0.5 * Cs) * np.cos(self.phi0 - 0.5 * Cs) if Cs!=0 else self.x0
+        y_prime = self.y0 + s * np.sin( 0.5 * Cs )/(0.5 * Cs) * np.sin(self.phi0 - 0.5 * Cs) if Cs!=0 else self.y0
+
         return x_prime, y_prime, z_prime, phi, s
     
     def __repr__(self):
