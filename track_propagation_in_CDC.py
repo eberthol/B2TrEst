@@ -462,7 +462,6 @@ class Trajectory(Particle):
     ----------
         signed_step: float
             for steps in arc length, this is equal to step_size
-            for steps in phi, we add to know the sign (i.e. in which direction is the track going)
         steps: numpy array
             array containing the steps
         CDChits: int
@@ -478,10 +477,8 @@ class Trajectory(Particle):
             can be used to tune the cut on the number of steps
         min_setps_in_SL0_cell: int 
             minimum number of steps in a SL0 cell to be counted as a hit
-            default value is 2
         min_setps_in_outer_cell: int
             minimum number of steps in a SL1-8 cell to be counted as a hit
-            efault value is 8
         list_of_points: list
             list of Point() objects forming the trajectory
         points: pandas dataframe
@@ -503,25 +500,20 @@ class Trajectory(Particle):
             plot the POCA position in the (x-y) plane
             
     """
-    def __init__(self, dictionary, instanceCDC, step_size, step_in_phi=False, min_setps_in_SL0_cell=2, min_setps_in_outer_cell=8):
+    def __init__(self, dictionary, instanceCDC, step_size, min_steps_in_SL0_cell=2, min_steps_in_outer_cell=8):
         super().__init__(dictionary)
 
         self.signed_step = None 
         self.steps = None
 
-        if step_in_phi:
-            self.signed_step = -step_size*self.omega/abs(self.omega) 
-            sign = -1 if self.signed_step <0 else 1        
-            self.steps = np.arange(self.phi0, self.phi0+sign*2*np.pi, self.signed_step) 
-        else:
-            self.signed_step = step_size
-            self.steps = np.arange(self.s0, self.s0+1000, self.signed_step) # 1000 is a dummy value
+        self.signed_step = step_size
+        self.steps = np.arange(self.s0, self.s0+1000, self.signed_step) # 1000 is a dummy value
 
         self.points = None 
         self.CDChits = None 
 
-        self.min_setps_in_SL0_cell   = min_setps_in_SL0_cell 
-        self.min_setps_in_outer_cell = min_setps_in_outer_cell 
+        self.min_steps_in_SL0_cell   = min_steps_in_SL0_cell 
+        self.min_steps_in_outer_cell = min_steps_in_outer_cell 
         
         self.meanStepsPerCell_all, self.stdStepsPerCell_all, self.minStepsPerCell_all, self.maxStepsPerCell_all = None, None, None, None
         self.meanStepsPerCell_SL0, self.stdStepsPerCell_SL0, self.minStepsPerCell_SL0, self.maxStepsPerCell_SL0 = None, None, None, None
@@ -530,7 +522,7 @@ class Trajectory(Particle):
         self.list_of_points = [] 
         rho_Vtx = np.sqrt( self.prodVtxX**2 +  self.prodVtxY**2 )
         for step in self.steps:
-            p = Point(dictionary, instanceCDC, step, step_in_phi)
+            p = Point(dictionary, instanceCDC, step)
             if p.inCDC:
                 if rho_Vtx==0:
                     # save all the points from the POCA
@@ -568,7 +560,7 @@ class Trajectory(Particle):
         # as is, drop_duplicates will also drop cells if the track 'came back to the same cell after a time'
         # could use nStepsIncell to help with that or write something that drops only consecutive duplicates
         cells = df_valid.drop_duplicates(['layer_id', 'cell_id'], keep='first')
-        self.CDChits = cells.loc[( ((cells.layer_id<8)&(cells.nStepsIncell>self.min_setps_in_SL0_cell)) | ((cells.layer_id>7)&(cells.nStepsIncell>self.min_setps_in_outer_cell)) ) ].shape[0]
+        self.CDChits = cells.loc[( ((cells.layer_id<8)&(cells.nStepsIncell>self.min_steps_in_SL0_cell)) | ((cells.layer_id>7)&(cells.nStepsIncell>self.min_steps_in_outer_cell)) ) ].shape[0]
     
         self.meanStepsPerCell = df_valid['nStepsIncell'].mean()
         self.stdStepsPerCell  = df_valid['nStepsIncell'].std()
