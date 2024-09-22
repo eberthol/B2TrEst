@@ -73,7 +73,7 @@ class CDC:
     --------------
     insideCDC(x, y, z, verbose=False)
         bool
-        determines if a point with corrdinates (x, y, z) is witih the CDC volume
+        determines if a point with corrdinates (x, y, z) is within the CDC volume
     get_cellID(phi, cell_delta_phi)
         int
         returns the index of a given cell (index 0 corresponds to the cell that has the samllest phi angle)
