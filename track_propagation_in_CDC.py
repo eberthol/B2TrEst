@@ -500,7 +500,7 @@ class Trajectory(Particle):
             plot the POCA position in the (x-y) plane
             
     """
-    def __init__(self, dictionary, instanceCDC, step_size, min_steps_in_SL0_cell=2, min_steps_in_outer_cell=8):
+    def __init__(self, dictionary, instanceCDC, step_size, min_steps_in_SL0_cell=2, min_steps_in_outer_cell=10):
         super().__init__(dictionary)
 
         self.signed_step = None 
