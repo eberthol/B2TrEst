@@ -78,7 +78,7 @@ class CDC:
     --------------
     insideCDC(x, y, z, verbose=False)
         bool
-        determines if a point with corrdinates (x, y, z) is within the CDC volume
+        determines if a point with coordinates (x, y, z) is within the CDC volume
     get_cellID(phi, cell_delta_phi)
         int
         returns the index of a given cell (index 0 corresponds to the cell that has the samllest phi angle)
@@ -455,8 +455,7 @@ class Trajectory(Particle):
     """
         collection of points representing the trajectory of the particle
         computes the number of hits in the CDC
-        the distance between the points (steps) can be given as a function of the arc length (s) or the angle phi (phi)
-        the steps are in arc-length by default
+        the distance between the points (steps) is given as a function of the arc length (s)
 
     Attributes
     ----------
