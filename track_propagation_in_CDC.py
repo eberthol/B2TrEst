@@ -279,7 +279,7 @@ class CDC:
         patches += [ Rectangle((self.layers.loc[lay].z_bwd,  -self.layers.loc[lay].rho_max), 
                         width=self.layers.loc[lay].z_fwd - self.layers.loc[lay].z_bwd, 
                         height=(self.layers.loc[lay].rho_max - self.layers.loc[lay].rho_min) ) for lay in [f'lay{i}' for i in range(0, self.layers.shape[0])]]
-        p2 = PatchCollection(patches, alpha=0.4, linewidth=1, edgecolor='b')
+        p2 = PatchCollection(patches, alpha=0.2, linewidth=1, edgecolor='b')
         ax.add_collection(p2)
             
         
@@ -296,14 +296,14 @@ class CDC:
                       self.SL.loc[sl].rho_max, 
                       0, 360, 
                       width=( self.SL.loc[sl].rho_max-self.SL.loc[sl].rho_min  ))  for sl in [f'SL{i}' for i in range(0, self.SL.shape[0])] ]
-        ax.add_collection( PatchCollection(patches,  alpha=0.4, linewidth=2, edgecolor='b') )
+        ax.add_collection( PatchCollection(patches,  alpha=0.1, linewidth=1, edgecolor='b') )
         
 
         patches = [ Wedge((0, 0), 
                         self.layers.loc[lay].rho_max, 
                         0, 360, 
                         width=( self.layers.loc[lay].rho_max-self.layers.loc[lay].rho_min  ))  for lay in [f'lay{i}' for i in range(0, self.layers.shape[0])] ]
-        ax.add_collection( PatchCollection(patches, alpha=0.4, linewidth=2, edgecolor='b', ls=':') )
+        ax.add_collection( PatchCollection(patches, alpha=0.2, linewidth=1, edgecolor='b', ls='-') )
 
         ax.set_xlim(-self.A[1], self.A[1])
         ax.set_ylim(-self.A[1], self.A[1])
@@ -583,14 +583,14 @@ class Trajectory(Particle):
         ax.scatter(self.points['z'], self.points['y'], color=color, label=label)
 
     def xy_vertex(self, ax, label='', color='b'):
-        ax.plot( [self.prodVtxX ], [self.prodVtxY], marker="*", markersize=15, color=color, label=label)
+        ax.plot( [self.prodVtxX ], [self.prodVtxY], marker="x", markersize=15, color=color, label=label)
         
     def zy_vertex(self, ax, label='', color='b'):
-        ax.plot( [self.prodVtxZ ], [self.prodVtxY], marker="*", markersize=15, color=color, label=label)
+        ax.plot( [self.prodVtxZ ], [self.prodVtxY], marker="x", markersize=15, color=color, label=label)
         
     def xy_poca(self, ax, label='', color='b'):
-        ax.plot( [self.x0 ], [self.y0], marker="x", markersize=15, color=color, label=label)
+        ax.plot( [self.x0 ], [self.y0], marker="*", markersize=15, color=color, label=label)
         
     def zy_poca(self, ax, label='', color='b'):
-        ax.plot( [self.z0 ], [self.y0], marker="x", markersize=15, color=color, label=label)
+        ax.plot( [self.z0 ], [self.y0], marker="*", markersize=15, color=color, label=label)
         
