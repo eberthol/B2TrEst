@@ -270,7 +270,7 @@ class CDC:
         patches += [ Rectangle((self.SL.loc[sl].z_bwd,  - self.SL.loc[sl].rho_max), 
                             width=self.SL.loc[sl].z_fwd - self.SL.loc[sl].z_bwd, 
                             height=(self.SL.loc[sl].rho_max-self.SL.loc[sl].rho_min) ) for sl in [f'SL{i}' for i in range(0, self.SL.shape[0])]]
-        p = PatchCollection(patches, alpha=0.4)
+        p = PatchCollection(patches, alpha=0.0)
         ax.add_collection(p)
         
         patches  = [ Rectangle((self.layers.loc[lay].z_bwd,  self.layers.loc[lay].rho_min), 
@@ -279,7 +279,7 @@ class CDC:
         patches += [ Rectangle((self.layers.loc[lay].z_bwd,  -self.layers.loc[lay].rho_max), 
                         width=self.layers.loc[lay].z_fwd - self.layers.loc[lay].z_bwd, 
                         height=(self.layers.loc[lay].rho_max - self.layers.loc[lay].rho_min) ) for lay in [f'lay{i}' for i in range(0, self.layers.shape[0])]]
-        p2 = PatchCollection(patches, alpha=0.4, linewidth=2, edgecolor='b')
+        p2 = PatchCollection(patches, alpha=0.4, linewidth=1, edgecolor='b')
         ax.add_collection(p2)
             
         
@@ -438,7 +438,6 @@ class Point(Particle):
         # returns particle position at a given arc length
 
         phi = self.phi0 - s*self.omega # not used in the computation
-
 
         z_prime = self.z0 + s * self.tanLambda
 
