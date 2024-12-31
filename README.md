@@ -1,4 +1,4 @@
-# B2TrEst
+# TrackEff
 
 This package provides a way to estimate the number of hits deposited by a charged track passing through the Central Drift Chamber (CDC) of the Belle II detector.
 
